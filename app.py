@@ -88,8 +88,9 @@ def update(db, item, updateDate):
     try:
         db.session.commit()
         product_schema.jsonify(product)
+        return "OK", 200
     except:
-        "OOOOPS"
+        return "OOOOPS"
 
 
 def add(db, item, updateDate):
@@ -118,12 +119,13 @@ def add(db, item, updateDate):
         db.session.add(new_product)
         db.session.commit()
         product_schema.jsonify(new_product)
+        return "OK", 200
     except:
         return "OOOOPS"
 
 
 # Crate a Product
-@app.route('/', methods=['POST', 'PUT'])
+@app.route('/import', methods=['POST', 'PUT'])
 def add_product():
     data = request.get_json()
     items = data['items']
@@ -146,17 +148,17 @@ def add_product():
 
         else:
             add(db, item, updateDate)
-    return "OK"
+    return "OK", 200
 
 
-@app.route('/products', methods=['GET'])
+@app.route('/0.0.0.0:80/products', methods=['GET'])
 def get_products():
-  all_products = Product.query.all()
-  result = products_schema.dump(all_products)
-  return jsonify(result)
+    all_products = Product.query.all()
+    result = products_schema.dump(all_products)
+    return jsonify(result)
 
 
-@app.route('/<string:id>', methods=['GET'])
+@app.route('/0.0.0.0:80/<string:id>', methods=['GET'])
 def get_product(id):
     try:
         all_products = Product.query.all()
@@ -179,7 +181,7 @@ def get_product(id):
         return "OOOOPS"
 
 
-@app.route('/delete/<string:id>', methods=['DELETE'])
+@app.route('/0.0.0.0:80/<string:id>', methods=['DELETE'])
 def delete_product(id):
     try:
         all_products = Product.query.all()
@@ -206,4 +208,4 @@ def delete_product(id):
 
 # Run Server
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True)
