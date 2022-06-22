@@ -1,3 +1,4 @@
+import math
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
@@ -44,6 +45,7 @@ product_schema = ProductSchema()
 products_schema = ProductSchema(many=True)
 
 
+# Post and Put func
 def check(table, idd):
     for item in table:
         if item['id'] == idd:
@@ -52,48 +54,69 @@ def check(table, idd):
     return False
 
 
-def update(db, item, updateDate):
-    product = Product.query.get(item['id'])
+def update(item, updateDate):
+    target = Product.query.get(item['id'])
     try:
         new_name = item['name']
-        product.name = new_name
+        target.name = new_name
     except:
         pass
 
     try:
         new_price = item['price']
-        product.price = new_price
+        target.price = new_price
     except:
         pass
 
     try:
         new_parentId = item['parentId']
-        product.parentId = new_parentId
+        if not(new_parentId == target.parentId):
+            if not(target.parentId == "") and not(target.parentId == None):
+                parentId = target.parentId
+                parent = Product.query.get(parentId)
+                str_children = parent.children.split(" ")
+                str_children.remove(target.id)
+                parent.children = " ".join(str_children)
+
+            new_parent = Product.query.get(new_parentId)
+            if new_parent.children == "" or new_parent.children == None:
+                new_parent.children = item["id"]
+            else:
+                children = new_parent.children.split(" ")
+                if not(target.id in children):
+                    children.append(target.id)
+                    new_parent.children = " ".join(children)
+
+        target.parentId = new_parentId
+
     except:
         pass
 
     try:
-        new_children = item['children']
-        product.children = new_children
+        children = item['children']
+        children_id = []
+        for item in children:
+            children_id.append(item['id'])
+        children_id = ' '.join(children_id)
+        target.children = children_id
     except:
         pass
 
     try:
         new_date = item['date']
-        product.date = new_date
+        target.date = new_date
     except:
         pass
-    product.date = updateDate
+    target.date = updateDate
 
     try:
         db.session.commit()
-        product_schema.jsonify(product)
-        return "OK", 200
+        return product_schema.jsonify(target)
     except:
         return "OOOOPS"
 
 
-def add(db, item, updateDate):
+def add(item, updateDate):
     id = item['id']
     type = item['type']
     name = item['name']
@@ -105,27 +128,41 @@ def add(db, item, updateDate):
 
     try:
         parentId = item['parentId']
+        parent = Product.query.get(parentId)
+
+        if parent.children == "" or parent.children == None:
+            parent.children = id
+        else:
+            children = parent.children.split(" ")
+            if not(id in children):
+                children.append(id)
+                parent.children = " ".join(children)
+
     except:
         parentId = None
 
     try:
         children = item['children']
+        children_id = []
+        for item in children:
+            children_id.append(item['id'])
+        children_id = ' '.join(children_id)
     except:
-        children = None
+        children_id = None
 
     date = updateDate
-    new_product = Product(id=id, type=type, name=name, price=price, parentId=parentId, children=children, date=date)
+    new_product = Product(id=id, type=type, name=name, price=price, parentId=parentId, children=children_id, date=date)
+
     try:
         db.session.add(new_product)
         db.session.commit()
-        product_schema.jsonify(new_product)
-        return "OK", 200
+        return product_schema.jsonify(new_product)
     except:
         return "OOOOPS"
 
 
 # Crate a Product
-@app.route('/import', methods=['POST', 'PUT'])
+@app.route('/imports', methods=['POST', 'PUT'])
 def add_product():
     data = request.get_json()
     items = data['items']
@@ -139,66 +176,132 @@ def add_product():
         updateDate = datetime.strptime(data['updateDate'], '%Y-%m-%dT%H:%M:%S.%f%z')
     except:
         return "Record not found", 400
-
     for item in items:
         idd = item['id']
 
         if check(table, idd):
-            update(db, item, updateDate)
+            update(item, updateDate)
 
         else:
-            add(db, item, updateDate)
+            add(item, updateDate)
+
     return "OK", 200
 
 
-@app.route('/0.0.0.0:80/products', methods=['GET'])
+# Get func
+def GetInfoAboutChildren(target):
+    res = []
+    price = [0, 0]
+
+    children_id = target["children"].split(" ")
+
+    for id in children_id:
+        child = Product.query.get(id)
+        child_json = product_schema.dump(child)
+        if child_json["children"] == "" or child_json["children"] == None:
+
+            if child_json["type"] == "OFFER":
+                price[0] += child_json["price"]
+                price[1] += 1
+
+            res.append(child_json)
+        else:
+            child_json["children"], get_price = GetInfoAboutChildren(child_json)
+            if get_price[1] > 0:
+                child_json["price"] = math.floor(get_price[0]/get_price[1])
+
+            price[0] += get_price[0]
+            price[1] += get_price[1]
+
+            res.append(child_json)
+
+    return res, price
+
+
+@app.route('/products', methods=['GET'])
 def get_products():
-    all_products = Product.query.all()
-    result = products_schema.dump(all_products)
-    return jsonify(result)
 
-
-@app.route('/0.0.0.0:80/<string:id>', methods=['GET'])
-def get_product(id):
     try:
         all_products = Product.query.all()
-        table = products_schema.dump(all_products)
-        res = []
+        result = products_schema.dump(all_products)
+    except:
+        result = []
 
-        for item in table:
-            if item['id'] == id:
-                res.append(item)
-                break
+    my_result = []
+    for item in result:
+        if item["children"] == "" or item["children"] == None:
+            my_result.append(item)
+        else:
+            item["children"], price = GetInfoAboutChildren(item)
 
-        if res[0]['type'] == 'CATEGORY' and not (res[0]['children'] == None):
-            for i in res[0]['children'].split(' '):
-                for item in table:
-                    if item['id'] == i:
-                        res.append(item)
-                        break
-        return jsonify(res)
+            if price[1] > 0:
+                item["price"] = math.floor(price[0]/price[1])
+
+            my_result.append(item)
+
+    return jsonify(my_result)
+
+
+@app.route('/nodes/<string:id>', methods=['GET'])
+def get_product(id):
+    try:
+        data = Product.query.get(id)
+        target = product_schema.dump(data)
+
+        if target["children"] == "" or target["children"] == None:
+            return jsonify(target)
+        else:
+            target["children"], price = GetInfoAboutChildren(target)
+
+            if price[1] > 0:
+                target["price"] = math.floor(price[0]/price[1])
+            return jsonify(target)
+
     except:
         return "OOOOPS"
 
 
-@app.route('/0.0.0.0:80/<string:id>', methods=['DELETE'])
-def delete_product(id):
-    try:
-        all_products = Product.query.all()
-        table = products_schema.dump(all_products)
-        target = Product.query.get(id)
-        try:
-            data = target.children.split(' ')
-        except:
-            data = []
+# Delete func
+def delete(target_id):
+    target = Product.query.get(target_id)
+    target_json = product_schema.dump(target)
+    children = target_json["children"]
+    if children == "" or children == None:
+
+        if target.parentId == None or target.parentId == "":
+            db.session.delete(target)
+            return None
+
+        parentId = target.parentId
+        parent = Product.query.get(parentId)
+        str_children = parent.children.split(" ")
+        str_children.remove(target.id)
+        parent.children = " ".join(str_children)
 
         db.session.delete(target)
 
-        for item in table:
-            if item['id'] in data:
-                target = Product.query.get(item['id'])
-                db.session.delete(target)
+        return None
+    else:
+        for child in children.split(" "):
+            delete(child)
 
+        if target.parentId == None or target.parentId == "":
+            db.session.delete(target)
+            return None
+
+        parentId = target.parentId
+        parent = Product.query.get(parentId)
+        str_children = parent.children.split(" ")
+        str_children.remove(target.id)
+        parent.children = " ".join(str_children)
+        db.session.delete(target)
+        return None
+
+
+@app.route('/delete/<string:id>', methods=['DELETE'])
+def delete_product(id):
+    try:
+        delete(id)
         db.session.commit()
         return "OK"
 
