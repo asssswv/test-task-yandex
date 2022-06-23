@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, redirect
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from art import tprint
 import os
 from datetime import datetime
 import math
@@ -328,6 +327,6 @@ def delete_product(id):
 
 # Run Server
 if __name__ == '__main__':
-    tprint("YANDEX ACADEMY", font="bulbhead")
+    # tprint("YANDEX ACADEMY", font="bulbhead")
     app.run(debug=True)
 #   app.run(debug=False, host="0.0.0.0", port=80)
