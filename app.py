@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import os
@@ -48,9 +48,9 @@ products_schema = ProductSchema(many=True)
 
 
 # Post and Put func
-def check(table, idd):
+def check(table, index):
     for item in table:
-        if item['id'] == idd:
+        if item['id'] == index:
             return True
 
     return False
@@ -58,6 +58,16 @@ def check(table, idd):
 
 def update(item, updateDate):
     target = Product.query.get(item['id'])
+
+    temp = product_schema.dump(target)
+    parentIdd = temp["parentId"]
+    parentt = Product.query.get(parentIdd)
+    while not (parentt == "") and not (parentt is None):
+        parentt.date = updateDate
+        data = product_schema.dump(parentt)
+        newId = data["parentId"]
+        parentt = Product.query.get(newId)
+
     try:
         new_name = item['name']
         target.name = new_name
@@ -72,6 +82,15 @@ def update(item, updateDate):
 
     try:
         new_parentId = item['parentId']
+
+        parentIdd = new_parentId
+        parentt = Product.query.get(parentIdd)
+        while not (parentt == "") and not (parentt is None):
+            parentt.date = updateDate
+            data = product_schema.dump(parentt)
+            newId = data["parentId"]
+            parentt = Product.query.get(newId)
+
         if not (new_parentId == target.parentId):
             if not (target.parentId == "") and not (target.parentId is None):
                 parentId = target.parentId
@@ -139,9 +158,16 @@ def add(item, updateDate):
             if not (id in children):
                 children.append(id)
                 parent.children = " ".join(children)
-
     except:
         parentId = None
+
+    parentIdd = item['parentId']
+    parentt = Product.query.get(parentIdd)
+    while not (parentt == "") and not (parentt is None):
+        parentt.date = updateDate
+        data = product_schema.dump(parentt)
+        newId = data["parentId"]
+        parentt = Product.query.get(newId)
 
     try:
         children = item['children']
@@ -160,7 +186,7 @@ def add(item, updateDate):
         db.session.commit()
         return product_schema.jsonify(new_product)
     except:
-        return "OOOOPS"
+        return "Validation Failed", 400
 
 
 # Crate a Product
@@ -274,7 +300,7 @@ def get_product(id):
             return jsonify(target)
 
     except:
-        return "Product with this id does not exist!"
+        return "Item not found", 404
 
 
 # Delete func
@@ -314,19 +340,19 @@ def delete(target_id):
         return
 
 
-@app.route('/delete/<string:id>', methods=['DELETE'])
-def delete_product(id):
+@app.route('/delete/<string:index>', methods=['DELETE'])
+def delete_product(index):
     try:
-        delete(id)
+        delete(index)
         db.session.commit()
-        return redirect("/products")
+        return "OK"
 
     except:
-        return "Product with this id does not exist!"
+        return "Item not found", 404
 
 
 # Run Server
 if __name__ == '__main__':
     # tprint("YANDEX ACADEMY", font="bulbhead")
     app.run(debug=True)
-#   app.run(debug=False, host="0.0.0.0", port=80)
+    # run(debug=False, host="0.0.0.0", port=80)
