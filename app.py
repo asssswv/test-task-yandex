@@ -24,13 +24,13 @@ ma = Marshmallow(app)
 
 # Product Class/Model
 class Product(db.Model):
-    id = db.Column(db.String(100), primary_key=True)
-    type = db.Column(db.String(100), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
+    id = db.Column(db.String(1000), primary_key=True)
+    type = db.Column(db.String(1000), nullable=False)
+    name = db.Column(db.String(1000), nullable=False)
     price = db.Column(db.Integer, nullable=True)
     parentId = db.Column(db.Integer, nullable=True)
-    children = db.Column(db.String(100), nullable=True)
-    date = db.Column(db.DateTime, nullable=False)
+    children = db.Column(db.String(1000), nullable=True)
+    date = db.Column(db.String(100), nullable=False)
 
     def __repr__(self):
         return '<Product %r>' % self
@@ -204,7 +204,7 @@ def add_product():
 
     try:
         updateDate = datetime.strptime(data['updateDate'], '%Y-%m-%dT%H:%M:%S.%f%z')
-
+        updateDate = data["updateDate"]
     except:
         return "Record not found", 400
 
