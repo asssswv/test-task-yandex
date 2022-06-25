@@ -132,17 +132,6 @@ def update(item, updateDate):
     except:
         pass
 
-    try:
-        try:
-            datetime.strptime(item['date'], '%Y-%m-%dT%H:%M:%S.%f%z')
-        except:
-            return "ERROR"
-
-        new_date = item['date']
-        target.date = new_date
-
-    except:
-        pass
     target.date = updateDate
 
     return "OK"
