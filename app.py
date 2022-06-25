@@ -70,13 +70,19 @@ def update(item, updateDate):
 
     try:
         new_name = item['name']
-        target.name = new_name
+        try:
+            target.name = new_name
+        except:
+            return "ERROR"
     except:
         pass
 
     try:
         new_price = item['price']
-        target.price = new_price
+        try:
+            target.price = new_price
+        except:
+            return "ERROR"
     except:
         pass
 
@@ -108,7 +114,10 @@ def update(item, updateDate):
                     children.append(target.id)
                     new_parent.children = " ".join(children)
 
-        target.parentId = new_parentId
+        try:
+            target.parentId = new_parentId
+        except:
+            return "ERROR"
 
     except:
         pass
@@ -124,17 +133,19 @@ def update(item, updateDate):
         pass
 
     try:
+        try:
+            datetime.strptime(item['date'], '%Y-%m-%dT%H:%M:%S.%f%z')
+        except:
+            return "ERROR"
+
         new_date = item['date']
         target.date = new_date
+
     except:
         pass
     target.date = updateDate
 
-    try:
-        db.session.commit()
-        return product_schema.jsonify(target)
-    except:
-        return "OOOOPS"
+    return "OK"
 
 
 def add(item, updateDate):
@@ -183,10 +194,9 @@ def add(item, updateDate):
 
     try:
         db.session.add(new_product)
-        db.session.commit()
-        return product_schema.jsonify(new_product)
+        return "OK"
     except:
-        return "Validation Failed", 400
+        return "ERROR"
 
 
 # Crate a Product
@@ -203,7 +213,7 @@ def add_product():
         list_all_products = []
 
     try:
-        updateDate = datetime.strptime(data['updateDate'], '%Y-%m-%dT%H:%M:%S.%f%z')
+        datetime.strptime(data['updateDate'], '%Y-%m-%dT%H:%M:%S.%f%z')
         updateDate = data["updateDate"]
     except:
         return "Record not found", 400
@@ -212,11 +222,16 @@ def add_product():
         idd = item['id']
 
         if check(list_all_products, idd):
-            update(item, updateDate)
+            res = update(item, updateDate)
+            if res == "ERROR":
+                return "Validation Failed", 400
 
         else:
-            add(item, updateDate)
+            res = add(item, updateDate)
+            if res == "ERROR":
+                return "Validation Failed", 400
 
+    db.session.commit()
     return "OK", 200
 
 
