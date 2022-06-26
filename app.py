@@ -357,6 +357,5 @@ def delete_product(index):
 
 # Run Server
 if __name__ == '__main__':
-    # tprint("YANDEX ACADEMY", font="bulbhead")
+    # app.run(debug=False, host="0.0.0.0", port=80)
     app.run(debug=True)
-    # run(debug=False, host="0.0.0.0", port=80)
