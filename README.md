@@ -3,7 +3,7 @@
 # 2. __Installing all dependencies__
     pip install -r requirements.txt
 # 3. Init DataBase
-    pyton
+    python
     >>> from app import db
     >>> db.create_all()
 # 4. Run server
