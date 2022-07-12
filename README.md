@@ -1,3 +1,11 @@
-# В файле requirements.txt прописаны все зависимости.
-# Уже создана БД - product.db
-# В файле tests.py данные вами юнит тесты с закомментированными необъязательными задачами.
+# 1. __Clone__
+    git clone git@github.com:asssswv/test_task_yandex.git
+# 2. __Installing all dependencies__
+    pip install -r requirements.txt
+# 3. Init DataBase
+    pyton
+    >>> from app import db
+    >>> db.create_all()
+# 4. Run server
+    python app.py
+    
