@@ -4,8 +4,10 @@
     pip install -r requirements.txt
 # 3. Init DataBase
     python
-    >>> from app import db
-    >>> db.create_all()
+
+    from app import db
+
+    db.create_all()
 # 4. Run server
     python app.py
     
