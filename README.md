@@ -1,5 +1,5 @@
 # 1. __Clone__
-    git clone git@github.com:asssswv/test_task_yandex.git
+    git clone git@github.com:asssswv/test-task-yandex.git
 # 2. __Installing all dependencies__
     pip install -r requirements.txt
 # 3. Init DataBase
